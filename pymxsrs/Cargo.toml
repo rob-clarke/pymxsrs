@@ -1,0 +1,20 @@
+[package]
+name = "pymxsrs"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+nalgebra = "0.29"
+mxsrs = { path = "../mxsrs" }
+pyaerso = { path = "../../pyaerso/pyaerso" }
+
+[dependencies.pyo3]
+version = "0.15.0"
+
+[features]
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]
+
+[lib]
+name = "pymxsrs"
+crate-type = ["cdylib"]

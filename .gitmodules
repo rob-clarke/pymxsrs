@@ -1,0 +1,3 @@
+[submodule "mxsrs"]
+	path = mxsrs
+	url = ssh://git@github.com/rob-clarke/mxsrs
