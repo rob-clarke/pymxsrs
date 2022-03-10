@@ -21,6 +21,7 @@ struct PyMXS {
 #[pymethods]
 impl PyMXS {
     
+    /// Return the world-frame position
     #[getter]
     fn get_position(&self) -> PyResult<[f64;3]> {
         match &self.mxs {
@@ -29,6 +30,7 @@ impl PyMXS {
         }
     }
     
+    /// Return the body-frame velocity
     #[getter]
     fn get_velocity(&self) -> PyResult<[f64;3]> {
         match &self.mxs {
@@ -37,6 +39,8 @@ impl PyMXS {
         }
     }
     
+    /// Return the attitude quaternion
+    /// Order is [i,j,k,w]
     #[getter]
     fn get_attitude(&self) -> PyResult<[f64;4]> {
         let q = match &self.mxs {
@@ -46,6 +50,7 @@ impl PyMXS {
         Ok([q.i, q.j, q.k, q.w])
     }
     
+    /// Return the body-frame axis rates
     #[getter]
     fn get_rates(&self) -> PyResult<[f64;3]> {
         match &self.mxs {
@@ -54,6 +59,8 @@ impl PyMXS {
         }
     }
     
+    /// Return the entire statevector
+    /// Statevector is formed of \[position,velocity(body),attitude_quaternion(i,j,k,w),axis_rates(body)\]
     #[getter]
     fn get_statevector(&self) -> PyResult<[f64;13]> {
         match &self.mxs {
@@ -62,6 +69,8 @@ impl PyMXS {
         }
     }
     
+    /// Set the entire statevector
+    /// Statevector is formed of \[position,velocity(body),attitude_quaternion(i,j,k,w),axis_rates(body)\]
     #[setter]
     fn set_statevector(&mut self, state: [f64;13]) -> PyResult<()> {
         match &mut self.mxs {
@@ -71,6 +80,22 @@ impl PyMXS {
         Ok(())
     }
     
+    /// Create a new MXS object
+    /// 
+    /// The WindModel must be an object with two methods: `get_wind` and `step`
+    /// - `get_wind` should is called with the world-frame position and returns
+    ///    the [N,E,D] components of the wind
+    /// - `step` takes a timestep and can be used to update internal wind model
+    ///    state. Use `pass` if not needed.
+    /// 
+    /// # Arguments:
+    /// * `mass` - Body mass. float (kg)
+    /// * `inertia` - Body inertia. float[3][3]
+    /// * `position` - Initial world-frame position. float[3]
+    /// * `velocity` - Initial body-frame velocity. float[3]
+    /// * `attitude` - Initial attitude quaternion (i,j,k,w). float[4]
+    /// * `rates` - Initial body-frame axis rates. float[3]
+    /// * `wind_model` - WindModel
     #[new]
     fn new(
         mass: f64, inertia_py: Vec<Vec<f64>>,
@@ -113,6 +138,16 @@ impl PyMXS {
         
     }
     
+    /// Propagate the state vector by delta_t under the supplied forces and torques
+    ///
+    /// Uses 4th-order Runge-Kutta integration
+    /// 
+    /// NB: Gravity is included by default
+    ///
+    /// # Arguments
+    /// 
+    /// * `delta_t` - Timestep (S)
+    /// * `inputstate` - Control inputs to apply [A,E,T,R]
     fn step(&mut self, delta_t: f64, inputstate: [f64;4]) {
         match &mut self.mxs {
             MXSImpl::NoWind(mxs) => mxs.0.step(delta_t, &inputstate),
